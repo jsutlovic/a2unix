@@ -49,18 +49,28 @@ void rewrite_newlines(FILE *stream) {
     char rbuf[READ_SIZE];
     size_t read_size;
     long read_pos = 0, write_pos = 0;
+    int end = 0;
 
     // Forever loop
-    for (;;) {
+    while (!end) {
         fseek(stream, read_pos, SEEK_SET);
         read_size = fread(rbuf, sizeof *rbuf, READ_SIZE, stream);
         read_pos += read_size;
 
+        if (read_size < READ_SIZE) {
+            if (feof(stream)) {
+#if (DEBUG)
+                printf("EOF found\n");
+#endif
+            end = 1;
+            } else if (ferror(stream)) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
+        }
+
         // Replace bad chars
         for (int i = 0; i < read_size; i++) {
-#if (DEBUG)
-            printf("i: %d\n", i);
-#endif
             if (rbuf[i] == REPLACE) {
 #if (DEBUG)
                 printf("found repl\n");
@@ -73,26 +83,11 @@ void rewrite_newlines(FILE *stream) {
                         printf("read_size: %ld\n", read_size);
 #endif
                     for (int j = i; j < read_size; j++) {
-#if (DEBUG)
-                        printf("j: %d\n", j);
-#endif
                         rbuf[j] = rbuf[j+1];
                     }
                 } else {
                     rbuf[i] = NEWLINE;
                 }
-            }
-        }
-
-        if (read_size < READ_SIZE) {
-            if (feof(stream)) {
-#if (DEBUG)
-                printf("EOF found\n");
-#endif
-                break;
-            } else if (ferror(stream)) {
-                perror(NULL);
-                exit(EXIT_FAILURE);
             }
         }
 
@@ -107,15 +102,6 @@ void rewrite_newlines(FILE *stream) {
     }
 
     // Cleanup
-#if (DEBUG)
-    printf("fseek\n");
-#endif
-    fseek(stream, write_pos, SEEK_SET);
-#if (DEBUG)
-    printf("fwrite\n");
-#endif
-    write_pos += fwrite(rbuf, sizeof *rbuf, read_size, stream);
-
     // Truncate file to total write length
 #if (DEBUG)
     printf("ftruncate\n");
