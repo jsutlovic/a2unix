@@ -46,7 +46,7 @@ FILE *open_file(char *filename) {
 }
 
 void rewrite_newlines(FILE *stream) {
-    char rbuf[READ_SIZE];
+    char *rbuf = malloc(READ_SIZE * sizeof(char));
     size_t read_size;
     long read_pos = 0, write_pos = 0;
     int end = 0;
@@ -94,6 +94,8 @@ void rewrite_newlines(FILE *stream) {
     }
 
     // Cleanup
+    free(rbuf);
+
 #if (DEBUG)
     printf("truncate size: %ld\n", write_pos);
 #endif
