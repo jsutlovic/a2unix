@@ -12,7 +12,7 @@
 
 void usage(char *name) {
     char *usage_doc = "Usage: %s\n"
-                      "  This is a utility to convert all line endings to unix newlines\n";
+        "  This is a utility to convert all line endings to unix newlines\n";
     printf(usage_doc, name);
     exit(EXIT_FAILURE);
 }
@@ -51,7 +51,6 @@ void rewrite_newlines(FILE *stream) {
     long read_pos = 0, write_pos = 0;
     int end = 0;
 
-    // Forever loop
     while (!end) {
         fseek(stream, read_pos, SEEK_SET);
         read_size = fread(rbuf, sizeof *rbuf, READ_SIZE, stream);
@@ -59,17 +58,16 @@ void rewrite_newlines(FILE *stream) {
 
         if (read_size < READ_SIZE) {
             if (feof(stream)) {
+                end = 1;
 #if (DEBUG)
                 printf("EOF found\n");
 #endif
-            end = 1;
             } else if (ferror(stream)) {
                 perror(NULL);
                 exit(EXIT_FAILURE);
             }
         }
 
-        // Replace bad chars
         for (int i = 0; i < read_size; i++) {
             if (rbuf[i] == REPLACE) {
 #if (DEBUG)
@@ -80,7 +78,7 @@ void rewrite_newlines(FILE *stream) {
                 if (i < (read_size) && rbuf[i+1] == NEWLINE) {
                     read_size--;
 #if (DEBUG)
-                        printf("read_size: %ld\n", read_size);
+                    printf("read_size: %ld\n", read_size);
 #endif
                     for (int j = i; j < read_size; j++) {
                         rbuf[j] = rbuf[j+1];
@@ -91,49 +89,29 @@ void rewrite_newlines(FILE *stream) {
             }
         }
 
-#if (DEBUG)
-        printf("fseek\n");
-#endif
         fseek(stream, write_pos, SEEK_SET);
-#if (DEBUG)
-        printf("fwrite\n");
-#endif
         write_pos += fwrite(rbuf, sizeof *rbuf, read_size, stream);
     }
 
     // Cleanup
-    // Truncate file to total write length
 #if (DEBUG)
-    printf("ftruncate\n");
-    printf("write_pos: %ld\n", write_pos);
+    printf("truncate size: %ld\n", write_pos);
 #endif
     if (ftruncate(fileno(stream), (off_t) write_pos)) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
 
-#if (DEBUG)
-    printf("fflush\n");
-#endif
-    // Flush to disk (userspace)
     if (fflush(stream)) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
 
-#if (DEBUG)
-    printf("fsync\n");
-#endif
-    // Flush to disk (kernel space)
     if (fsync(fileno(stream))) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
 
-#if (DEBUG)
-    printf("fclose\n");
-#endif
-    // Close file descriptor
     if (fclose(stream)) {
         perror(NULL);
         exit(EXIT_FAILURE);
@@ -145,9 +123,6 @@ int main(int argc, char *argv[]) {
         usage(argv[0]);
     } else {
         for (int fc = 1; fc < argc; fc++) {
-#if (DEBUG)
-            printf("fc: %d\n", fc);
-#endif
             find_file(argv[fc]);
             rewrite_newlines(open_file(argv[fc]));
         }
