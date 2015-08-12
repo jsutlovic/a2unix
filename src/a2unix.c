@@ -77,7 +77,7 @@ void rewrite_newlines(FILE *stream) {
 #endif
                 // If there is already a '\n', delete the '\r'.
                 // Otherwise replace the '\r' with a '\n'.
-                if ((i > 0 && rbuf[i-1] == NEWLINE) || (i < (read_size) && rbuf[i+1] == NEWLINE)) {
+                if (i < (read_size) && rbuf[i+1] == NEWLINE) {
                     read_size--;
 #if (DEBUG)
                         printf("read_size: %ld\n", read_size);
